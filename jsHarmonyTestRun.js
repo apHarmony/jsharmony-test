@@ -225,7 +225,13 @@ jsHarmonyTestRun.prototype.command_screenshot = async function(command, page, va
 };
 
 jsHarmonyTestRun.prototype.command_wait = async function(command, page, variables) {
-  if (command.element && typeof(command.element) != 'string' && typeof(command.element) != 'object') return asError('wait element must be a string or element selector', command);
+  if (command.element) {
+    if(typeof(command.element) == 'string'){
+      command.element = { selector: command.element };
+    }
+    if(!command.element.selector) return asError('wait element missing selector property', command);
+    command.element.selector = command.element.selector.toString();
+  }
   if (command.text && !(typeof(command.text) == 'string' || typeof(command.text) == 'object')) return asError('wait text must be a string or text selector', command);
   if (!command.element && !command.text) return asError('wait command must have element and/or text to wait for', command);
   var textSelector = getTextSelector(command.text);
@@ -236,15 +242,11 @@ jsHarmonyTestRun.prototype.command_wait = async function(command, page, variable
     var waitOptions = {};
     if(command.timeout) waitOptions.timeout = command.timeout;
     if (command.element && !textSelector) {
-      var selector = (command.element.selector) ? command.element.selector : command.element;
-      var options = {};
-
-      if (_.has(command.element, 'visible')) {
-        if (command.element.visible == true) _.extend(options, {visible: true, hidden: false});
-        else if (command.element.visible == false) options = _.extend(options, {visible: false, hidden: true});
+      if ('visible' in command.element) {
+        if (command.element.visible) waitOptions.visible = true;
+        else waitOptions.hidden = true;
       }
-
-      waitCondition = page.waitForSelector(selector, _.extend(options, waitOptions));
+      waitCondition = page.waitForSelector(command.element.selector, waitOptions);
     } else if (textSelector) {
       waitCondition = page.waitForFunction(textSelector, _.extend({polling: 'mutation'}, waitOptions),
         command.element || 'html', command.text);
