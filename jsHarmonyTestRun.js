@@ -241,15 +241,15 @@ jsHarmonyTestRun.prototype.command_wait = async function(command, page, variable
     var waitCondition;
     var waitOptions = {};
     if(command.timeout) waitOptions.timeout = command.timeout;
+    if (command.element && ('visible' in command.element)) {
+      if (command.element.visible) waitOptions.visible = true;
+      else waitOptions.hidden = true;
+    }
     if (command.element && !textSelector) {
-      if ('visible' in command.element) {
-        if (command.element.visible) waitOptions.visible = true;
-        else waitOptions.hidden = true;
-      }
       waitCondition = page.waitForSelector(command.element.selector, waitOptions);
     } else if (textSelector) {
       waitCondition = page.waitForFunction(textSelector, _.extend({polling: 'mutation'}, waitOptions),
-        command.element || 'html', command.text);
+        (command.element && command.element.selector) || 'html', command.text);
     } else {
       return asError('wait arguments did not evaluate to a wait condition', command);
     }
