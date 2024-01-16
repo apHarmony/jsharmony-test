@@ -136,6 +136,7 @@ The "input" command performs key presses or enters data into elements.
   * \r   (For "enter key")
   * {SPECIAL_KEY}  (For special keys as defined in the Puppeteer KeyInput object), e.g., {Backspace}
   * {SPECIAL_KEY1}{SPECIAL_KEY2}  (Multiple simultaneous special key presses)
+  * List of special keys found here: https://pptr.dev/api/puppeteer.keyinput
 * If the input is a checkbox, the value can be:
   * true :: checked
   * false :: unchecked
