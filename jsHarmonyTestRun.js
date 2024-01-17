@@ -288,22 +288,19 @@ jsHarmonyTestRun.prototype.command_input = async function(command, page, variabl
   if (typeof(command.value) != 'string' && typeof(command.value) != 'boolean') return asError('input missing value', command);
   var value = substituteVariables(variables, command.value);
   try {
-    var matches = value.match(/\{([^}]+)\}/g);
+    var matches = (value||'').toString().match(/({[^}]*})/gm);
     if (matches){
-      var specialKeys = _.map(matches, function(match){return match.slice(1, -1);});
-
-      var keysCharCnt = 0;
+      var matchLen = 0;
+      var specialKeys = _.map(matches, function(match){ matchLen += match.length; return match.slice(1, -1); });
+      if(matchLen != (value||'').toString().length) return asError(specialKey+' is not a valid KeyInput', command);
       for (var i = 0; i<specialKeys.length; i++){
-        var key = specialKeys[i];
-        if(!(_.includes(KeyInputs, key))) return asError(key+' is not a valid KeyInput', command);
-        keysCharCnt += (key.length + 2);
+        var specialKey = specialKeys[i];
+        if(!(_.includes(KeyInputs, specialKey))) return asError(specialKey+' is not a valid KeyInput', command);
       }
-      if (_.replace(value, /\s/g, '').length != keysCharCnt) return asError('Special keys must be enclosed in curly brackets', command);
-
       await page.focus(command.element);
-      _.each(specialKeys, async function(key){await page.keyboard.down(key);})
+      _.each(specialKeys, async function(key){ await page.keyboard.down(key);});
       await page.waitForTimeout(100);
-      _.each(specialKeys, async function(key){await page.keyboard.up(key);})
+      _.each(specialKeys, async function(key){await page.keyboard.up(key);});
     }
     else {
       var type = await page.$eval(command.element, function(el) {return el.type;});
@@ -359,18 +356,25 @@ function parseHandler(jsh, handler, args, desc, scriptPath) {
 jsHarmonyTestRun.prototype.command_js = async function(command, page, variables) {
   if (typeof(command.js) != 'string' && !_.isArray(command.js)) return asError('js missing js code', command);
   try {
-    var func_command = parseHandler(this.jsh, command.js, ['jsh', 'page', 'cb'], 'command', command.sourcePath);
+    var func_command = parseHandler(this.jsh, command.js, ['jsh', 'page', 'callback'], 'command', command.sourcePath);
     var callbackValue;
     await new Promise(function(resolve, reject) {
       var result = func_command(this.jsh,page,function(ret) {
-        callbackValue = ret; resolve();
+        callbackValue = ret;
+        resolve();
       });
       if (result && result.then) {
-        return result.then(resolve, reject);
+        return result.then(function(callbackResult){
+          if(typeof callbackResult != 'undefined') callbackValue = new Promise(function(resolve, reject){ return resolve(callbackResult); });
+          return resolve();
+        }, reject);
       }
       // else wait on the callback.
     });
     if (callbackValue) {
+      if(callbackValue.then){
+        return callbackValue;
+      }
       return asError(callbackValue, command);
     } else {
       return {};

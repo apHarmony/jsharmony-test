@@ -119,6 +119,15 @@ describe('commands', function() {
     assertError(result.errors, undefined);
   });
 
+  it('input - text w/special keys', async function() {
+    var result = await this.testRun.runCommand({exec: 'input', element: '#text', value: '{Home}'}, this.page, {});
+    await this.testRun.runCommand({exec: 'input', element: '#text', value: '{Shift}{End}'}, this.page, {});
+    await this.testRun.runCommand({exec: 'input', element: '#text', value: '{Delete}'}, this.page, {});
+    await this.testRun.runCommand({exec: 'input', element: '#text', value: 'abc'}, this.page, {});
+    result = await this.testRun.runCommand({exec: 'js', js: 'return new Promise(async function(resolve,reject){ var textVal = await page.evaluate(function(){ return document.querySelector("#text").value; }); resolve(textVal); });'}, this.page, {});
+    assert.equal(result, 'abc');
+  });
+
   it('input - checkbox', async function() {
     var result = await this.testRun.runCommand({exec: 'input', element: '#checkbox', value: true}, this.page, {});
     assertError(result.errors, undefined);
@@ -142,12 +151,12 @@ describe('commands', function() {
   });
 
   it('js - callback success', async function() {
-    var result = await this.testRun.runCommand({exec: 'js', js: 'cb()'}, this.page, {});
+    var result = await this.testRun.runCommand({exec: 'js', js: 'callback()'}, this.page, {});
     assertError(result.errors, undefined);
   });
 
   it('js - callback failure', async function() {
-    var result = await this.testRun.runCommand({exec: 'js', js: 'cb("error")'}, this.page, {});
+    var result = await this.testRun.runCommand({exec: 'js', js: 'callback("error")'}, this.page, {});
     assert.equal(result.errors.length, 1);
     assert.equal(result.errors[0].message, 'error');
     assert(result.errors[0].command, 'command not assigned');
