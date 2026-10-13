@@ -63,6 +63,8 @@ describe('commands', function() {
     jsh.Extensions.report = report;
     jsh.Extensions.image = image;
   
+    await fs.promises.mkdir(screenshotDir, { recursive: true });
+
     this.browser = await getBrowser();
     this.page = await this.browser.newPage();
     this.page.on('console', function(msg) {console.log('browser: ', msg.text());});

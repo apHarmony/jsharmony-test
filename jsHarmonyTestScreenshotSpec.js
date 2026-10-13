@@ -67,19 +67,24 @@ const getSelectorRectangle = function (selector) {
   document.querySelector('html').style.overflow = 'hidden';
   if (!selector) return null;
   return new Promise(function (resolve) {
-    /* globals jshInstance */
-    if (!jshInstance) return resolve();
-    var $ = jshInstance.$;
-    var jobjs = $(selector);
-    if (!jobjs.length) return resolve();
+    var objs = document.querySelectorAll(selector);
+    if (!objs.length) return resolve();
     var startpos = null;
     var endpos = null;
-    for (var i = 0; i < jobjs.length; i++) {
-      var jobj = $(jobjs[i]);
-      var offset = jobj.offset();
-      
+    for (var i = 0; i < objs.length; i++) {
+      var obj = objs[i];
+      var offset = {left: 0, top: 0};
+      var width = 0;
+      var height = 0;
+      if (obj.getClientRects().length) {
+        var rect = obj.getBoundingClientRect();
+        offset = {left: rect.left + window.pageXOffset, top: rect.top + window.pageYOffset};
+        width = rect.width;
+        height = rect.height;
+      }
+
       var offStart = {left: offset.left - 1, top: offset.top - 1};
-      var offEnd = {left: offset.left + 1 + jobj.outerWidth(), top: offset.top + 1 + jobj.outerHeight()};
+      var offEnd = {left: offset.left + 1 + width, top: offset.top + 1 + height};
       
       if (!startpos) startpos = offStart;
       if (offStart.left < startpos.left) startpos.left = offStart.left;
@@ -101,10 +106,7 @@ const getSelectorRectangle = function (selector) {
 const addElement = function (elem) {
   document.querySelector('html').style.overflow = 'hidden';
   if (!elem) return null;
-  if (!jshInstance) return null;
-  var $ = jshInstance.$;
-  var _elem = $(elem);
-  $('html').append(_elem);
+  document.documentElement.insertAdjacentHTML('beforeend', elem);
 };
 
 
